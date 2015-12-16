@@ -9,16 +9,14 @@ package ru.codeunited.gen.dev;
  *
  * @author ikonovalov
  */
-public class ADC {
+public class ADC8Bit extends ADC {
     
-    public final int channeNumber;
+    private byte[] channels = {0x00, 0x00, 0x00, 0x00};
     
-    public ADC(int channelNumber) {
-        this.channeNumber = channelNumber;
+    public ADC8Bit(int channelNumber) {
+        super(channelNumber);
     }
-
-    public int getChanneNumber() {
-        return channeNumber;
-    }
+    
+    
     
 }

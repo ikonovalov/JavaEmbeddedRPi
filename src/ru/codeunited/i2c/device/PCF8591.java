@@ -6,11 +6,12 @@
 package ru.codeunited.i2c.device;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import jdk.dio.DeviceManager;
 import jdk.dio.i2cbus.I2CDevice;
 import jdk.dio.i2cbus.I2CDeviceConfig;
-import ru.codeunited.gen.dev.ADC;
-import ru.codeunited.gen.dev.DAC;
+import static ru.codeunited.i2c.device.Symbols.MICRO;
 
 /**
  *
@@ -31,18 +32,20 @@ public class PCF8591 extends AbstractI2CDevice {
     public static final byte INPUT_CHANNEL_2 = 0x02;
 
     public static final byte INPUT_CHANNEL_3 = 0x03;
+    
+    public static final byte INPUT_CHANNEL_AUTO_INC = PCF8591.AUTO_INC_CHANNEL_ENABLE;
 
     public static final byte AUTO_INC_CHANNEL_ENABLE = 0b0000_0100;
 
     public static final byte AUTO_INC_CHANNEL_DISABLE = 0b0000_0000;
 
-    byte controlByte = 0b0000_0000; // output disabled, auto-increment channel off, input channel 0 is current
+    private byte controlByte = 0b0000_0000; // initial state: output disabled, auto-increment channel off, input channel 0 is current
 
-    byte analogValue = 0x00;
+    private byte analogValue = 0x00;
 
-    private final ADC adc;
+    private byte currentChannel = 0;
 
-    private final DAC dac;
+    private boolean autoIncrement = false;
 
     public PCF8591(int address) throws IOException {
         I2CDeviceConfig config = new I2CDeviceConfig.Builder() // new I2CDeviceConfig(BUS_ID, DEFAULT_ADDRESS, ADDRESS_SIZE, FREQ);
@@ -51,9 +54,6 @@ public class PCF8591 extends AbstractI2CDevice {
                 .setClockFrequency(FREQ)
                 .build();
         setDevice((I2CDevice) DeviceManager.open(config));
-
-        adc = new ADC(4);
-        dac = new DAC(1);
     }
 
     public PCF8591() throws IOException {
@@ -68,8 +68,13 @@ public class PCF8591 extends AbstractI2CDevice {
      * @throws IOException
      */
     public final void switchChannel(byte channel) throws IOException {
-        System.out.println("Switch to channel #" + channel);
+        if (channel < INPUT_CHANNEL_0 || channel > INPUT_CHANNEL_3) {
+            throw new IOException("Channel number out of range 0x00 - 0x03");
+        }
+
         write((byte) (ANALOG_OUTPUT_ENABLED | channel));
+        this.currentChannel = channel;
+        this.autoIncrement = false;
     }
 
     /**
@@ -78,8 +83,67 @@ public class PCF8591 extends AbstractI2CDevice {
      * @throws IOException
      */
     public final void useAutoRotateChannel() throws IOException {
-        System.out.println("Switch to AUTO_INC channels mode with internal oscilator enabled");
-        write((byte) (ANALOG_OUTPUT_ENABLED | AUTO_INC_CHANNEL_ENABLE)); // starts with 0x00 channel
+        write((byte) (ANALOG_OUTPUT_ENABLED | AUTO_INC_CHANNEL_ENABLE | INPUT_CHANNEL_0)); // starts with 0x00 channel
+        this.currentChannel = -1;
+        this.autoIncrement = true;
     }
 
+    public byte getControlByte() {
+        return controlByte;
+    }
+
+    public void setControlByte(byte controlByte) {
+        this.controlByte = controlByte;
+    }
+
+    public ByteBuffer readChannels() throws IOException {
+        useAutoRotateChannel();        
+        ByteBuffer prefetched = read(1);
+        long s = System.nanoTime();
+        ByteBuffer bbuffer = read(4);
+        long f = System.nanoTime();
+        System.out.println("Tconv=" + (f - s) / 1000.0d + MICRO + "s");
+        return bbuffer;
+    }
+
+    /**
+     * If you want to override it. You should call super method.
+     * @param buffer - bytes for a write operation.
+     * @throws IOException 
+     */
+    @Override
+    protected void write(byte... buffer) throws IOException {
+        this.controlByte = buffer[0];                                               // First byte in a sequence is a control byte for 8591
+        this.analogValue = buffer.length > 1 ? buffer[buffer.length - 1] : 0x00;    // Set analog output value to last transmitted value except control byte
+        buffer = appendAnalogOutputValue(buffer);
+        super.write(buffer);                                                        // To change body of generated methods, choose Tools | Templates.
+    }
+    
+    public void setAnalogChannelValue(byte value) throws IOException {
+        write(
+                (byte) (this.controlByte | ANALOG_OUTPUT_ENABLED), 
+                value
+        );
+    }
+
+    private byte[] appendAnalogOutputValue(byte... buffer) {
+        if (buffer.length == 1) {
+            buffer = Arrays.copyOf(buffer, 2);
+            buffer[1] = analogValue;
+        }
+        return buffer;
+    }
+
+    @Override
+    public void close() throws Exception {
+        write((byte)0x00);
+        super.close(); 
+    }
+    
+    
+
+    @Override
+    public String toString() {
+        return "PCF8591{" + "controlByte=" + controlByte + ", analogValue=" + analogValue + ", currentChannel=" + currentChannel + ", autoIncrement=" + autoIncrement + '}';
+    }
 }
