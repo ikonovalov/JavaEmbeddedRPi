@@ -35,22 +35,22 @@ public abstract class AbstractI2CDevice implements AutoCloseable {
         }
     }
 
-    public I2CDevice getDevice() {
+    protected I2CDevice getDevice() {
         return device;
     }
 
-    public final void setDevice(I2CDevice device) {
+    protected final void setDevice(I2CDevice device) {
         this.device = device;
     }
     
-    public ByteBuffer read(int size) throws IOException {
+    protected ByteBuffer read(int size) throws IOException {
         byte[] buf = new byte[size];
         ByteBuffer bBuffer = ByteBuffer.wrap(buf);
         getDevice().read(bBuffer);
         return bBuffer;
     }
     
-    public int read() throws IOException {
+    protected int read() throws IOException {
         int newValue = getDevice().read();
         return newValue;
     }

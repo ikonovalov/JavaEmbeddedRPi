@@ -76,23 +76,33 @@ public class PCF8591 extends AbstractI2CDevice {
         this.currentChannel = channel;
         this.autoIncrement = false;
     }
+    
+    
+    /**
+     * Read previous[0] and current[1] channel value. You should set channel first with "setChannel(x)" method.
+     * @return ByteBuffer with a previous and current value.
+     * @throws IOException 
+     */
+    public final ByteBuffer readChannel() throws IOException {
+        return read(2);
+    }
 
     /**
      * AUTO_INC + ANALOG_OUTPUT enabled (oscillator should stay warm)
      *
      * @throws IOException
      */
-    public final void useAutoRotateChannel() throws IOException {
+    public void useAutoRotateChannel() throws IOException {
         write((byte) (ANALOG_OUTPUT_ENABLED | AUTO_INC_CHANNEL_ENABLE | INPUT_CHANNEL_0)); // starts with 0x00 channel
         this.currentChannel = -1;
         this.autoIncrement = true;
     }
 
-    public byte getControlByte() {
+    protected byte getControlByte() {
         return controlByte;
     }
 
-    public void setControlByte(byte controlByte) {
+    protected void setControlByte(byte controlByte) {
         this.controlByte = controlByte;
     }
 
@@ -113,7 +123,7 @@ public class PCF8591 extends AbstractI2CDevice {
      */
     @Override
     protected void write(byte... buffer) throws IOException {
-        this.controlByte = buffer[0];                                               // First byte in a sequence is a control byte for 8591
+        setControlByte(buffer[0]);                                                  // First byte in a sequence is a control byte for 8591
         this.analogValue = buffer.length > 1 ? buffer[buffer.length - 1] : 0x00;    // Set analog output value to last transmitted value except control byte
         buffer = appendAnalogOutputValue(buffer);
         super.write(buffer);                                                        // To change body of generated methods, choose Tools | Templates.

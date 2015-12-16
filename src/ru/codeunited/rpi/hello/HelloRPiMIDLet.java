@@ -37,6 +37,14 @@ public class HelloRPiMIDLet extends MIDlet {
                 System.out.println(pcf8591.toString());
                 Thread.sleep(2000L);
             }
+            
+            pcf8591.switchChannel(PCF8591.INPUT_CHANNEL_1);
+            for (int z = 0; z < 120; z++) {
+                System.out.println("Cycle #" + z);                
+                ByteBuffer channelOne = pcf8591.readChannel();
+                pcf8591.setAnalogChannelValue(channelOne.get(1));
+                Thread.sleep(1000L);
+            }
 
         } catch (Exception ex) {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
