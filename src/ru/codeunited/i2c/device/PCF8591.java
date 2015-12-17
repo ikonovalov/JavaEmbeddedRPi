@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ru.codeunited.i2c.device;
 
 import java.io.IOException;
@@ -129,7 +124,7 @@ public class PCF8591 extends AbstractI2CDevice {
         super.write(buffer);                                                        // To change body of generated methods, choose Tools | Templates.
     }
     
-    public void setAnalogChannelValue(byte value) throws IOException {
+    public void writeAnalogChannel(byte value) throws IOException {
         write(
                 (byte) (this.controlByte | ANALOG_OUTPUT_ENABLED), 
                 value
