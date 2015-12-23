@@ -48,14 +48,33 @@ public class PCF8591 extends AbstractI2CDevice {
                 .setAddress(address, ADDRESS_SIZE)
                 .setClockFrequency(FREQ)
                 .build();
-        setDevice((I2CDevice) DeviceManager.open(config));
+        setDevice((I2CDevice) DeviceManager.open(config));       
     }
 
     public PCF8591() throws IOException {
         this(DEFAULT_ADDRESS);
     }
+    
+    protected byte getControlByte() {
+        return controlByte;
+    }
+
+    protected void setControlByte(byte controlByte) {
+        this.controlByte = controlByte;
+    }          
 
     /**
+     * AUTO_INC + ANALOG_OUTPUT enabled (oscillator should stay warm)
+     *
+     * @throws IOException
+     */
+    public void useAutoRotateChannel() throws IOException {
+        write((byte) (ANALOG_OUTPUT_ENABLED | AUTO_INC_CHANNEL_ENABLE | INPUT_CHANNEL_0)); // starts with 0x00 channel
+        this.currentChannel = -1;
+        this.autoIncrement = true;
+    }
+
+/**
      * Switch to channel 0-3 with analog output enabled (in real for warm-up
      * internal oscillator)
      *
@@ -70,44 +89,30 @@ public class PCF8591 extends AbstractI2CDevice {
         write((byte) (ANALOG_OUTPUT_ENABLED | channel));
         this.currentChannel = channel;
         this.autoIncrement = false;
-    }
-    
+    }         
     
     /**
      * Read previous[0] and current[1] channel value. You should set channel first with "setChannel(x)" method.
      * @return ByteBuffer with a previous and current value.
+     * @see setChannel
      * @throws IOException 
      */
     public final ByteBuffer readChannel() throws IOException {
-        return read(2);
+        return read(2); // 2 bytes [prev and current]
     }
 
     /**
-     * AUTO_INC + ANALOG_OUTPUT enabled (oscillator should stay warm)
-     *
-     * @throws IOException
+     * First of all it set autorotation channel mode and reads channels skipping first previous value.
+     * @return ByteBuffer with a four bytes with channels values.
+     * @throws IOException 
      */
-    public void useAutoRotateChannel() throws IOException {
-        write((byte) (ANALOG_OUTPUT_ENABLED | AUTO_INC_CHANNEL_ENABLE | INPUT_CHANNEL_0)); // starts with 0x00 channel
-        this.currentChannel = -1;
-        this.autoIncrement = true;
-    }
-
-    protected byte getControlByte() {
-        return controlByte;
-    }
-
-    protected void setControlByte(byte controlByte) {
-        this.controlByte = controlByte;
-    }
-
     public ByteBuffer readChannels() throws IOException {
         useAutoRotateChannel();        
         ByteBuffer prefetched = read(1);
         long s = System.nanoTime();
         ByteBuffer bbuffer = read(4);
         long f = System.nanoTime();
-        System.out.println("Tconv=" + (f - s) / 1000.0d + MICRO + "s");
+        System.out.println("Tconv=" + (f - s) / 1000.0f + MICRO + "s");
         return bbuffer;
     }
 
@@ -125,10 +130,7 @@ public class PCF8591 extends AbstractI2CDevice {
     }
     
     public void writeAnalogChannel(byte value) throws IOException {
-        write(
-                (byte) (this.controlByte | ANALOG_OUTPUT_ENABLED), 
-                value
-        );
+        write((byte) (this.controlByte | ANALOG_OUTPUT_ENABLED), value);
     }
 
     private byte[] appendAnalogOutputValue(byte... buffer) {

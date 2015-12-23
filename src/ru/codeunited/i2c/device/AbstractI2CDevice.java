@@ -30,6 +30,7 @@ public abstract class AbstractI2CDevice implements AutoCloseable {
     @Override
     public void close() throws Exception {
         if (device.isOpen()) {
+            device.unlock();
             device.close();
             System.out.println("Device closed");
         }
@@ -39,8 +40,9 @@ public abstract class AbstractI2CDevice implements AutoCloseable {
         return device;
     }
 
-    protected final void setDevice(I2CDevice device) {
+    protected final void setDevice(I2CDevice device) throws IOException {
         this.device = device;
+        this.device.tryLock(1000);
     }
     
     protected ByteBuffer read(int size) throws IOException {

@@ -29,22 +29,14 @@ public class HelloRPiMIDLet extends MIDlet {
         System.out.println("Hello RPi " + new Date());
 
         try (final PCF8591 pcf8591 = new PCF8591()) {
+            pcf8591.writeAnalogChannel((byte) 0xda);
             
-            for (int z = 0; z < 10; z++) {
+            for (int z = 0; z < 10; z++) {                
                 ByteBuffer channels4 = pcf8591.readChannels();
                 print(channels4);
-                pcf8591.setAnalogChannelValue((byte) (0xba + z * 0x03));
                 System.out.println(pcf8591.toString());
                 Thread.sleep(2000L);
-            }
-            
-            pcf8591.switchChannel(PCF8591.INPUT_CHANNEL_1);
-            for (int z = 0; z < 120; z++) {
-                System.out.println("Cycle #" + z);                
-                ByteBuffer channelOne = pcf8591.readChannel();
-                pcf8591.setAnalogChannelValue(channelOne.get(1));
-                Thread.sleep(1000L);
-            }
+            }           
 
         } catch (Exception ex) {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
