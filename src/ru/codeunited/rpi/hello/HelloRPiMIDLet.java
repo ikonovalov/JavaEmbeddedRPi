@@ -8,9 +8,11 @@ package ru.codeunited.rpi.hello;
 import ru.codeunited.i2c.device.PCF8591;
 import java.nio.ByteBuffer;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.midlet.MIDlet;
+import ru.codeunited.gen.dev.ADCChannel;
 
 /**
  *
@@ -18,11 +20,6 @@ import javax.microedition.midlet.MIDlet;
  */
 public class HelloRPiMIDLet extends MIDlet {
 
-    private static final int LED1_PIN_BCM = 26;
-
-    private static final int LED2_DEV_ID = 40;
-
-    private static final char MICRO = '\u03bc';
 
     @Override
     public void startApp() {
@@ -32,9 +29,8 @@ public class HelloRPiMIDLet extends MIDlet {
             pcf8591.writeAnalogChannel((byte) 0xda);
             
             for (int z = 0; z < 10; z++) {                
-                ByteBuffer channels4 = pcf8591.readChannels();
-                print(channels4);
-                System.out.println(pcf8591.toString());
+                List<ADCChannel> channels4 = pcf8591.readChannels();
+                System.out.println(channels4);
                 Thread.sleep(2000L);
             }           
 

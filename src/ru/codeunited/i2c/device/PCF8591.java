@@ -2,10 +2,17 @@ package ru.codeunited.i2c.device;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import jdk.dio.DeviceManager;
 import jdk.dio.i2cbus.I2CDevice;
 import jdk.dio.i2cbus.I2CDeviceConfig;
+import ru.codeunited.gen.dev.ADCChannel;
 import static ru.codeunited.i2c.device.Symbols.MICRO;
 
 /**
@@ -27,7 +34,7 @@ public class PCF8591 extends AbstractI2CDevice {
     public static final byte INPUT_CHANNEL_2 = 0x02;
 
     public static final byte INPUT_CHANNEL_3 = 0x03;
-    
+
     public static final byte INPUT_CHANNEL_AUTO_INC = PCF8591.AUTO_INC_CHANNEL_ENABLE;
 
     public static final byte AUTO_INC_CHANNEL_ENABLE = 0b0000_0100;
@@ -38,9 +45,11 @@ public class PCF8591 extends AbstractI2CDevice {
 
     private byte analogValue = 0x00;
 
-    private byte currentChannel = 0;
+    private int currentChannel = 0;
 
     private boolean autoIncrement = false;
+
+    private final Map<Integer, ADCChannel> adcChannels = new HashMap<>();
 
     public PCF8591(int address) throws IOException {
         I2CDeviceConfig config = new I2CDeviceConfig.Builder() // new I2CDeviceConfig(BUS_ID, DEFAULT_ADDRESS, ADDRESS_SIZE, FREQ);
@@ -48,20 +57,24 @@ public class PCF8591 extends AbstractI2CDevice {
                 .setAddress(address, ADDRESS_SIZE)
                 .setClockFrequency(FREQ)
                 .build();
-        setDevice((I2CDevice) DeviceManager.open(config));       
+        setDevice((I2CDevice) DeviceManager.open(config));
+        for (int z = 0; z < 4; z++) {
+            adcChannels.put(z, new ADCChannel(z));
+        }
+
     }
 
     public PCF8591() throws IOException {
         this(DEFAULT_ADDRESS);
     }
-    
+
     protected byte getControlByte() {
         return controlByte;
     }
 
     protected void setControlByte(byte controlByte) {
         this.controlByte = controlByte;
-    }          
+    }
 
     /**
      * AUTO_INC + ANALOG_OUTPUT enabled (oscillator should stay warm)
@@ -74,18 +87,18 @@ public class PCF8591 extends AbstractI2CDevice {
         this.autoIncrement = true;
     }
 
-/**
+    /**
      * Switch to channel 0-3 with analog output enabled (in real for warm-up
      * internal oscillator)
      *
      * @param channel
      * @throws IOException
      */
-    public final void switchChannel(byte channel) throws IOException {
+    public final void switchChannel(int channel) throws IOException {
         if (channel < INPUT_CHANNEL_0 || channel > INPUT_CHANNEL_3) {
             throw new IOException("Channel number out of range 0x00 - 0x03");
         }
-        
+
         if (channel == this.currentChannel) {
             return; // we already on channel
         }
@@ -93,42 +106,57 @@ public class PCF8591 extends AbstractI2CDevice {
         write((byte) (ANALOG_OUTPUT_ENABLED | channel));
         this.currentChannel = channel;
         this.autoIncrement = false;
-    }         
-    
+    }
+
     /**
-     * Read previous[0] and current[1] channel value. You should set channel first with "setChannel(x)" method.
+     * Read previous[0] and current[1] channel value. You should set channel
+     * first with "setChannel(x)" method.
+     *
      * @return ByteBuffer with a previous and current value.
      * @see setChannel
-     * @throws IOException 
+     * @throws IOException
      */
-    public final ByteBuffer readChannel() throws IOException {
-        return read(2); // 2 bytes [prev and current]
+    public final ADCChannel readChannel() throws IOException {
+        ByteBuffer buffer = read(2); // 2 bytes [prev and current]
+        ADCChannel channel = adcChannels.get(this.currentChannel);
+        channel.setValue(buffer.get(1));
+        return channel;
     }
-    
-    public ByteBuffer readChannel(byte channelNumber) throws IOException {
+
+    public ADCChannel readChannel(int channelNumber) throws IOException {
         switchChannel(channelNumber);
         return readChannel();
     }
 
     /**
-     * First of all it set autorotation channel mode and reads channels skipping first previous value.
+     * First of all it set autorotation channel mode and reads channels skipping
+     * first previous value.
+     *
      * @return ByteBuffer with a four bytes with channels values.
-     * @throws IOException 
+     * @throws IOException
      */
-    public ByteBuffer readChannels() throws IOException {
-        useAutoRotateChannel();        
-        ByteBuffer prefetched = read(1);
+    public List<ADCChannel> readChannels() throws IOException {
+        useAutoRotateChannel();
+        ByteBuffer prefetched = read(1); // wast this byte
+        
         long s = System.nanoTime();
         ByteBuffer bbuffer = read(4);
+        List<ADCChannel> result = new ArrayList<>(4);
+        for (int z = 0; z < 4; z++) {
+            ADCChannel adc = adcChannels.get(z);
+            adc.setValue(bbuffer.get(z));
+            result.add(adc);
+        }
         long f = System.nanoTime();
         System.out.println("Tconv=" + (f - s) / 1000.0f + MICRO + "s");
-        return bbuffer;
+        return result;
     }
 
     /**
      * If you want to override it. You should call super method.
+     *
      * @param buffer - bytes for a write operation.
-     * @throws IOException 
+     * @throws IOException
      */
     @Override
     protected void write(byte... buffer) throws IOException {
@@ -137,7 +165,7 @@ public class PCF8591 extends AbstractI2CDevice {
         buffer = appendAnalogOutputValue(buffer);
         super.write(buffer);                                                        // To change body of generated methods, choose Tools | Templates.
     }
-    
+
     public void writeAnalogChannel(byte value) throws IOException {
         write((byte) (this.controlByte | ANALOG_OUTPUT_ENABLED), value);
     }
@@ -152,11 +180,9 @@ public class PCF8591 extends AbstractI2CDevice {
 
     @Override
     public void close() throws Exception {
-        write((byte)0x00);
-        super.close(); 
+        write((byte) 0x00);
+        super.close();
     }
-    
-    
 
     @Override
     public String toString() {
