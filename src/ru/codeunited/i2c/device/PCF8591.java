@@ -68,7 +68,7 @@ public class PCF8591 extends AbstractI2CDevice {
      *
      * @throws IOException
      */
-    public void useAutoRotateChannel() throws IOException {
+    private void useAutoRotateChannel() throws IOException {
         write((byte) (ANALOG_OUTPUT_ENABLED | AUTO_INC_CHANNEL_ENABLE | INPUT_CHANNEL_0)); // starts with 0x00 channel
         this.currentChannel = -1;
         this.autoIncrement = true;
@@ -85,6 +85,10 @@ public class PCF8591 extends AbstractI2CDevice {
         if (channel < INPUT_CHANNEL_0 || channel > INPUT_CHANNEL_3) {
             throw new IOException("Channel number out of range 0x00 - 0x03");
         }
+        
+        if (channel == this.currentChannel) {
+            return; // we already on channel
+        }
 
         write((byte) (ANALOG_OUTPUT_ENABLED | channel));
         this.currentChannel = channel;
@@ -99,6 +103,11 @@ public class PCF8591 extends AbstractI2CDevice {
      */
     public final ByteBuffer readChannel() throws IOException {
         return read(2); // 2 bytes [prev and current]
+    }
+    
+    public ByteBuffer readChannel(byte channelNumber) throws IOException {
+        switchChannel(channelNumber);
+        return readChannel();
     }
 
     /**
