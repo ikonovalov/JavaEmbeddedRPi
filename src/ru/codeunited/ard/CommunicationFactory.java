@@ -9,16 +9,20 @@ package ru.codeunited.ard;
  *
  * @author ikonovalov
  */
-public class CommunicationFactory {
+public final class CommunicationFactory {
 
-    public static ArduinoCommunication create(ArduinoCommunicationCapabilities capabilities) {
+    public static <T extends ArduinoCommunication> T create(ArduinoCommunicationCapabilities capabilities) {
         switch (capabilities) {
             case UART:
-                return new UARTCommunication();
+                return (T) new UARTCommunication();
             default:
                 throw new RuntimeException("Communication not supported");
 
         }
+    }
+
+    private CommunicationFactory() {
+        
     }
 
 }

@@ -5,10 +5,20 @@
  */
 package ru.codeunited.ard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  *
  * @author ikonovalov
  */
-interface ArduinoCommunication {
+public interface ArduinoCommunication extends AutoCloseable {
+    
+    InputStream newInputStream();
+    
+    OutputStream newOutputStream();
+    
+    ArduinoCommunication open() throws IOException;
     
 }

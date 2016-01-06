@@ -9,25 +9,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import ru.codeunited.i2c.device.PCF8591;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.midlet.MIDlet;
-import jdk.dio.DeviceManager;
-import jdk.dio.uart.UART;
-import jdk.dio.uart.UARTConfig;
-import static jdk.dio.uart.UARTConfig.DATABITS_8;
-import static jdk.dio.uart.UARTConfig.DATABITS_9;
-import static jdk.dio.uart.UARTConfig.FLOWCONTROL_NONE;
-import static jdk.dio.uart.UARTConfig.PARITY_EVEN;
-import static jdk.dio.uart.UARTConfig.PARITY_NONE;
-import static jdk.dio.uart.UARTConfig.STOPBITS_1;
-import static jdk.dio.uart.UARTConfig.STOPBITS_2;
+import ru.codeunited.ard.ArduinoCommunication;
+import ru.codeunited.ard.ArduinoCommunicationCapabilities;
+import ru.codeunited.ard.CommunicationFactory;
+import ru.codeunited.ard.UARTCommunication;
 import ru.codeunited.gen.dev.ADCChannel;
 
 /**
@@ -60,24 +52,11 @@ public class HelloRPiMIDLet extends MIDlet {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-       
-
-        UART arduinoSerial = null;
-        try {
-            UARTConfig config = new UARTConfig.Builder()
-                    //.setChannelNumber(1)
-                    //.setControllerNumber(0)
-                    .setControllerName("ttyACM0")
-                    .setBaudRate(9600)
-                    .setDataBits(DATABITS_8)
-                    .setStopBits(STOPBITS_1)
-                    .setParity(PARITY_NONE)
-                    .setFlowControlMode(FLOWCONTROL_NONE)
-                    .setInputBufferSize(1024)
-                    .setOutputBufferSize(1024)
-                    .build();
-            arduinoSerial = DeviceManager.open(config);
-            InputStream is = Channels.newInputStream(arduinoSerial);
+      
+        try (final ArduinoCommunication arduinoUART = CommunicationFactory.create(ArduinoCommunicationCapabilities.UART)) {            
+            
+            arduinoUART.open();            
+            InputStream is = arduinoUART.newInputStream();
             InputStreamReader isReader = new InputStreamReader(is);
             BufferedReader bReader = new BufferedReader(isReader);
             
@@ -93,16 +72,8 @@ public class HelloRPiMIDLet extends MIDlet {
         } catch (IOException ex) {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
             System.err.println(ex.getMessage());
-        } finally {
-            if (arduinoSerial != null) {
-                try {
-                    arduinoSerial.close();
-                    System.out.println("Arduino channel closed");
-                            
-                } catch (IOException ex) {
-                    Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
+        } catch (Exception ex) {
+            Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
