@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package ru.codeunited.ard;
+package ru.codeunited.rpi.com;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,12 +13,12 @@ import java.io.OutputStream;
  *
  * @author ikonovalov
  */
-public interface ArduinoCommunication extends AutoCloseable {
+public interface RPiCommunication extends AutoCloseable {
     
     InputStream newInputStream();
     
     OutputStream newOutputStream();
     
-    ArduinoCommunication open() throws IOException;
+    RPiCommunication open() throws IOException;
     
 }

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package ru.codeunited.ard;
+package ru.codeunited.rpi.com;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +21,7 @@ import static jdk.dio.uart.UARTConfig.STOPBITS_1;
  *
  * @author ikonovalov
  */
-public class UARTCommunication implements ArduinoCommunication {
+public class UARTCommunication implements RPiCommunication {
 
     private UARTConfig config;
 

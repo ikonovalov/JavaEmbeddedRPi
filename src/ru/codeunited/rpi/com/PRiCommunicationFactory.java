@@ -3,15 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package ru.codeunited.ard;
+package ru.codeunited.rpi.com;
 
 /**
  *
  * @author ikonovalov
  */
-public final class CommunicationFactory {
+public final class PRiCommunicationFactory {
 
-    public static <T extends ArduinoCommunication> T create(ArduinoCommunicationCapabilities capabilities) {
+    public static <T extends RPiCommunication> T create(RPiCommunicationCapabilities capabilities) {
         switch (capabilities) {
             case UART:
                 return (T) new UARTCommunication();
@@ -21,7 +21,7 @@ public final class CommunicationFactory {
         }
     }
 
-    private CommunicationFactory() {
+    private PRiCommunicationFactory() {
         
     }
 

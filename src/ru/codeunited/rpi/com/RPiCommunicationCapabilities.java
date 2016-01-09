@@ -3,22 +3,22 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package ru.codeunited.ard;
+package ru.codeunited.rpi.com;
 
 /**
  *
  * @author ikonovalov
  */
-public enum ArduinoCommunicationCapabilities {
+public enum RPiCommunicationCapabilities {
 
-    /**
-     *
-     */
-    UART(UARTCommunication.class);
+    UART(UARTCommunication.class),
+    I2C(RPiCommunication.class), /* not yet implemented */
+    TWI(RPiCommunication.class),
+    SPI(RPiCommunication.class);
 
     private final Class<?> communitaction;
 
-    private ArduinoCommunicationCapabilities(Class comm) {
+    private RPiCommunicationCapabilities(Class comm) {
         this.communitaction = comm;
     }
 

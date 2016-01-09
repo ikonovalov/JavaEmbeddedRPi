@@ -6,6 +6,7 @@
 package ru.codeunited.rpi.hello;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.io.Connector;
@@ -37,13 +38,14 @@ public class RPiServer implements Runnable {
     }
 
     public synchronized void up() {
-        if (serverSocket == null) {
+        if (serverSocket == null && serverThread == null) {
             try {
                 serverSocket = (ServerSocketConnection) Connector.open(String.format("socket://:%d", port));
                 System.out.println("Server started on " + serverSocket.getLocalAddress() + ":" + serverSocket.getLocalPort());
                 shouldRun = true;
                 serverThread = new Thread(this);
                 serverThread.start();
+                System.out.println("Server thread started. Listerning...");
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -51,7 +53,18 @@ public class RPiServer implements Runnable {
     }
 
     public synchronized void down() {
-        shouldRun = false;
+        shouldRun = false;        
+    }
+    
+    public synchronized void downForced() {
+        down();
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException ex) {
+                Logger.getLogger(RPiServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         if (serverThread != null) {
             serverThread.interrupt();
         }
@@ -60,13 +73,14 @@ public class RPiServer implements Runnable {
     @Override
     public void run() {
         while (shouldRun) {
-
             try {
-                StreamConnection streamConnection = serverSocket.acceptAndOpen();
-
+                try (StreamConnection streamConnection = serverSocket.acceptAndOpen(); OutputStream dos = streamConnection.openOutputStream()) {
+                    dos.write("Hello, this is RPi2".getBytes());
+                    dos.flush();
+                }
             } catch (IOException ex) {
                 Logger.getLogger(RPiServer.class.getName()).log(Level.SEVERE, null, ex);
-
+                System.err.println(ex.getMessage());
                 if (serverSocket != null) {
                     try {
                         serverSocket.close();
@@ -79,6 +93,7 @@ public class RPiServer implements Runnable {
             }
 
         }
+        downForced();
     }
 
 }

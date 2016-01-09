@@ -16,11 +16,11 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.midlet.MIDlet;
-import ru.codeunited.ard.ArduinoCommunication;
-import ru.codeunited.ard.ArduinoCommunicationCapabilities;
-import ru.codeunited.ard.CommunicationFactory;
-import ru.codeunited.ard.UARTCommunication;
+import ru.codeunited.rpi.com.RPiCommunicationCapabilities;
+import ru.codeunited.rpi.com.PRiCommunicationFactory;
+import ru.codeunited.rpi.com.UARTCommunication;
 import ru.codeunited.gen.dev.ADCChannel;
+import ru.codeunited.rpi.com.RPiCommunication;
 
 /**
  *
@@ -32,6 +32,7 @@ public class HelloRPiMIDLet extends MIDlet {
     public void startApp() {
         try {
             System.out.println("Hello RPi " + new Date());
+            System.out.println("I2C dev 0x48 reading...");
 
             try (final PCF8591 pcf8591 = new PCF8591()) {
                 pcf8591.writeAnalogChannel((byte) 0xda);
@@ -52,8 +53,9 @@ public class HelloRPiMIDLet extends MIDlet {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-      
-        try (final ArduinoCommunication arduinoUART = CommunicationFactory.create(ArduinoCommunicationCapabilities.UART)) {            
+        
+        System.out.println("UART communication with Arduino MEGA 2560 R3");
+        try (final RPiCommunication arduinoUART = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART)) {            
             
             arduinoUART.open();            
             InputStream is = arduinoUART.newInputStream();
@@ -76,6 +78,8 @@ public class HelloRPiMIDLet extends MIDlet {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+        RPiServer server = new RPiServer();
+        server.up();
     }
 
     @Override
