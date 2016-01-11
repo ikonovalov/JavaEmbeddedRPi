@@ -6,6 +6,7 @@
 package ru.codeunited.rpi.hello;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,24 +75,27 @@ public class RPiServer implements Runnable {
     public void run() {
         while (shouldRun) {
             try {
-                try (StreamConnection streamConnection = serverSocket.acceptAndOpen(); OutputStream dos = streamConnection.openOutputStream()) {
-                    dos.write("Hello, this is RPi2".getBytes());
+                try (
+                        StreamConnection streamConnection = serverSocket.acceptAndOpen(); 
+                        OutputStream dos = streamConnection.openOutputStream();
+                        InputStream is = streamConnection.openDataInputStream()) {
+                    
+                    dos.write("Hello, this is RPi2\n".getBytes());
+                    dos.write("cmd>".getBytes());
                     dos.flush();
+                    byte[] buffer = new byte[16];
+                    int cmdSz = is.read(buffer);
+                    System.out.println(new String(buffer, 0, cmdSz));
+                    for (int z = 0; z < cmdSz; z++) {
+                        dos.write(buffer[z]);
+                    }
                 }
             } catch (IOException ex) {
                 Logger.getLogger(RPiServer.class.getName()).log(Level.SEVERE, null, ex);
                 System.err.println(ex.getMessage());
-                if (serverSocket != null) {
-                    try {
-                        serverSocket.close();
-                    } catch (IOException ex1) {
-                        Logger.getLogger(RPiServer.class.getName()).log(Level.SEVERE, null, ex1);
-                    }
-                    System.out.println("Server socket has been shutdown due error.");
-                }
+                downForced();
                 throw new RuntimeException(ex.getMessage(), ex);
             }
-
         }
         downForced();
     }

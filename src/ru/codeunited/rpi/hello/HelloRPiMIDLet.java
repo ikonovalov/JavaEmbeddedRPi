@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import ru.codeunited.i2c.device.PCF8591;
-import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -18,7 +17,6 @@ import java.util.logging.Logger;
 import javax.microedition.midlet.MIDlet;
 import ru.codeunited.rpi.com.RPiCommunicationCapabilities;
 import ru.codeunited.rpi.com.PRiCommunicationFactory;
-import ru.codeunited.rpi.com.UARTCommunication;
 import ru.codeunited.gen.dev.ADCChannel;
 import ru.codeunited.rpi.com.RPiCommunication;
 
@@ -28,8 +26,12 @@ import ru.codeunited.rpi.com.RPiCommunication;
  */
 public class HelloRPiMIDLet extends MIDlet {
 
+    private final RPiServer server = new RPiServer();
+
     @Override
     public void startApp() {
+        server.up();
+
         try {
             System.out.println("Hello RPi " + new Date());
             System.out.println("I2C dev 0x48 reading...");
@@ -52,19 +54,17 @@ public class HelloRPiMIDLet extends MIDlet {
         } catch (Exception ex) {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-        
+
         System.out.println("UART communication with Arduino MEGA 2560 R3");
-        try (final RPiCommunication arduinoUART = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART)) {            
-            
-            arduinoUART.open();            
+        try (final RPiCommunication arduinoUART = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART)) {
+            System.out.println("Arduino channel ready...");
+            arduinoUART.open();
             InputStream is = arduinoUART.newInputStream();
             InputStreamReader isReader = new InputStreamReader(is);
             BufferedReader bReader = new BufferedReader(isReader);
-            
-            System.out.println("Arduino channel ready...");
+
             char[] buffer = new char[64];
-            for (int z = 0; z < 5; z++) {               
+            for (int z = 0; z < 5; z++) {
                 System.out.println(bReader.readLine());
             }
             bReader.close();
@@ -77,22 +77,11 @@ public class HelloRPiMIDLet extends MIDlet {
         } catch (Exception ex) {
             Logger.getLogger(HelloRPiMIDLet.class.getName()).log(Level.SEVERE, null, ex);
         }
-
-        RPiServer server = new RPiServer();
-        server.up();
     }
 
     @Override
     public void destroyApp(boolean unconditional) {
         System.out.println("Good bay RPi");
-
+        server.downForced();
     }
-
-    private void print(ByteBuffer buffer) {
-        byte[] bytes = buffer.array();
-        for (int z = 0; z < bytes.length; z++) {
-            System.out.println("-> z(" + z + ")=" + bytes[z]);
-        }
-    }
-
 }
