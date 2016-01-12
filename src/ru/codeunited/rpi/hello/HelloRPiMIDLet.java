@@ -63,7 +63,6 @@ public class HelloRPiMIDLet extends MIDlet {
             InputStreamReader isReader = new InputStreamReader(is);
             BufferedReader bReader = new BufferedReader(isReader);
 
-            char[] buffer = new char[64];
             for (int z = 0; z < 5; z++) {
                 System.out.println(bReader.readLine());
             }

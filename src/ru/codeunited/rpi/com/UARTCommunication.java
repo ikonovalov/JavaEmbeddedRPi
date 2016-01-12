@@ -22,8 +22,12 @@ import static jdk.dio.uart.UARTConfig.STOPBITS_1;
  * @author ikonovalov
  */
 public class UARTCommunication implements RPiCommunication {
+    
+    public static final int DEFAULT_BAUD = 9600;
+    
+    public static final String DEFAULT_DEV_NAME = "ttyACM0";
 
-    private UARTConfig config;
+    private final UARTConfig config;
 
     private UART arduinoSerial;
 
@@ -31,13 +35,19 @@ public class UARTCommunication implements RPiCommunication {
 
     private static final int BUFF_OUTPUT_SZ = 512;
 
-    private int baudRate = 9600; // very slow by default
-
     /**
      * Connect to /devACM0 with 9600 speed.
      */
     public UARTCommunication() {
-        this("ttyACM0", 9600);
+        this(DEFAULT_DEV_NAME, DEFAULT_BAUD);
+    }
+    
+    public UARTCommunication(String deviceName) {
+        this(deviceName, DEFAULT_BAUD);
+    }
+    
+    public UARTCommunication(int baud) {
+        this(DEFAULT_DEV_NAME, baud);
     }
 
     public UARTCommunication(String deviceName, int baudRate) {

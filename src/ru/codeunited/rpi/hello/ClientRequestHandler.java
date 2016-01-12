@@ -5,12 +5,17 @@
  */
 package ru.codeunited.rpi.hello;
 
+import javax.microedition.io.StreamConnection;
+
 /**
  *
  * @author ikonovalov
  */
 public class ClientRequestHandler {
     
-    //private final 
+    private final StreamConnection connection;
     
+    public ClientRequestHandler(StreamConnection connection) {
+        this.connection = connection;
+    }
 }
