@@ -9,9 +9,9 @@ package ru.codeunited.msg.v1;
  *
  * @author ikonovalov
  */
-public class UARTHWMessage extends HWMessageV1 {
+public class UARTHWMessageV1 extends HWMessageV1 {
     
-    public UARTHWMessage(byte[] message) {
+    public UARTHWMessageV1(byte[] message) {
         super(message);
     }
     

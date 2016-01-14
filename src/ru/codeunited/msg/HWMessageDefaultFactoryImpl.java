@@ -8,7 +8,7 @@ package ru.codeunited.msg;
 import ru.codeunited.msg.v1.GPIOHWMessageV1;
 import ru.codeunited.msg.v1.HWMessageV1;
 import ru.codeunited.msg.v1.ServoHWMessageV1;
-import ru.codeunited.msg.v1.UARTHWMessage;
+import ru.codeunited.msg.v1.UARTHWMessageV1;
 
 /**
  *
@@ -25,7 +25,7 @@ public class HWMessageDefaultFactoryImpl implements HWMessageFactory {
             case HWMessage.MSG_GPIO:
                 return new GPIOHWMessageV1(msg);
             case HWMessage.MSG_UART:
-                return new UARTHWMessage(msg);
+                return new UARTHWMessageV1(msg);
             default:
                 return new HWMessageV1(msg);
         }
