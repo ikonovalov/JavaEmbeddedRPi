@@ -18,6 +18,7 @@ import javax.microedition.midlet.MIDlet;
 import ru.codeunited.rpi.com.RPiCommunicationCapabilities;
 import ru.codeunited.rpi.com.PRiCommunicationFactory;
 import ru.codeunited.gen.dev.ADCChannel;
+import ru.codeunited.msg.HWMessageDefaultFactoryImpl;
 import ru.codeunited.rpi.com.RPiCommunication;
 
 /**
@@ -29,7 +30,9 @@ public class HelloRPiMIDLet extends MIDlet {
     private final RPiServer server = new RPiServer();
 
     @Override
-    public void startApp() {
+    public void startApp() {        
+        server.setMessageBus(new MessageBusImpl());
+        server.setMessageFactory(new HWMessageDefaultFactoryImpl());
         server.up();
 
         try {

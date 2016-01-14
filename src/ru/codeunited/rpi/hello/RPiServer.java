@@ -6,15 +6,12 @@
 package ru.codeunited.rpi.hello;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.io.Connector;
 import javax.microedition.io.ServerSocketConnection;
 import javax.microedition.io.StreamConnection;
-import ru.codeunited.arduino.HWMessage;
-import ru.codeunited.arduino.HWMessageV1;
+import ru.codeunited.msg.HWMessageFactory;
 import ru.codeunited.rpi.com.PRiCommunicationFactory;
 import ru.codeunited.rpi.com.RPiCommunicationCapabilities;
 import ru.codeunited.rpi.com.UARTCommunication;
@@ -34,6 +31,12 @@ public class RPiServer implements Runnable {
     private Thread serverThread;
 
     private ServerSocketConnection serverSocket;
+    
+    private MessageBus messageBus = new MessageBusImpl();       
+        
+    private HWMessageFactory messageFactory;
+    
+    private final UARTCommunication uart = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART);
 
     public RPiServer() {
         this(DEFAULT_PORT);
@@ -43,8 +46,22 @@ public class RPiServer implements Runnable {
         this.port = port;
     }
 
-    private final UARTCommunication uart = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART);
+    public void setMessageBus(MessageBus messageBus) {
+        this.messageBus = messageBus;
+    }
 
+    public void setMessageFactory(HWMessageFactory messageFactory) {
+        this.messageFactory = messageFactory;
+    }
+
+    public MessageBus getMessageBus() {
+        return messageBus;
+    }
+
+    public HWMessageFactory getMessageFactory() {
+        return messageFactory;
+    }       
+   
     public synchronized void up() {
         if (serverSocket == null && serverThread == null) {
             try {
@@ -86,33 +103,23 @@ public class RPiServer implements Runnable {
     @Override
     public void run() {
         System.out.println(Thread.currentThread().getName() + " enter into a main loop");
-        while (shouldRun) {
-            try (
-                    StreamConnection streamConnection = serverSocket.acceptAndOpen();
-                    OutputStream out = streamConnection.openOutputStream();
-                    InputStream in = streamConnection.openDataInputStream()) {
-                final int bufferSz = 32;
-                byte[] buffer = new byte[bufferSz];
-                byte[] incompleteTransmission;
-                byte[] restTransmission;
-                int readSize;
-                while((readSize = in.read(buffer)) != -1) {              
-                    System.out.println("Buffer read " + readSize);
-                           
-                    // message ready
-                    HWMessage message = new HWMessageV1(null);
-                }
-                System.out.println("End of transmission");
-                
 
-            } catch (Exception ex) {
-                Logger.getLogger(RPiServer.class.getName()).log(Level.SEVERE, null, ex);
-                System.err.println(ex.getMessage());
-                downForced();
-                throw new RuntimeException(ex.getMessage(), ex);
+        try {
+            while (shouldRun) {
+                StreamConnection streamConnection = serverSocket.acceptAndOpen();
+                ClientRequestHandler clientRequestHandler = new ClientRequestHandler(streamConnection);
+                clientRequestHandler.setMessageBus(getMessageBus());
+                clientRequestHandler.setMessageFactory(getMessageFactory());
+                clientRequestHandler.handle();
             }
+        } catch (IOException ex) {
+            Logger.getLogger(RPiServer.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println(ex.getMessage());
+
+            throw new RuntimeException(ex.getMessage(), ex);
+        } finally {
+            downForced();
         }
-        downForced();
     }
 
 }
