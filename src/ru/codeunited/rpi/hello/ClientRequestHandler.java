@@ -53,7 +53,7 @@ public class ClientRequestHandler {
     }
 
     void handle() {
-        final int bufferSz = 32;
+        final int bufferSz = 8;
         byte[] buffer = new byte[bufferSz];
         byte[] restTransmission;
         System.out.println("Handling incoming connection... ");
@@ -84,9 +84,17 @@ public class ClientRequestHandler {
                     
                     msgOffset += msgSize; // move to start of a next message
                     System.out.println("New MsgOffset: " + msgOffset);
-                    if (buffer[msgOffset] == 0x00) { // buffer exhausted?
+                    
+                    // detect stop factors
+                    if (msgOffset  >= bufferSz ) { // а вот тут возможно сообщение выходит за границы буфера!
                         parseMessage = false;
-                        System.out.println("Buffer exhausted");
+                        System.out.println("Offset points out of buffer");
+                        continue;
+                    }
+                    if (buffer[msgOffset] == 0x00) { //0x00 - we don't have 0x00 message type - so buffer not fulled.
+                        parseMessage = false;
+                        System.out.println("No more messages in a buffer");
+                        continue;
                     }
                 }
             }
