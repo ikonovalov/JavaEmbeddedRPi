@@ -37,9 +37,10 @@ public class HelloRPiMIDLet extends MIDlet {
 
         try {
             System.out.println("Hello RPi " + new Date());
-            System.out.println("I2C dev 0x48 reading...");
-
-            try (final PCF8591 pcf8591 = new PCF8591()) {
+            
+            int adcAddress = 0x48;
+            System.out.println("I2C dev 0x" + Integer.toHexString(adcAddress) + " reading...");
+            try (final PCF8591 pcf8591 = new PCF8591(adcAddress)) {
                 pcf8591.writeAnalogChannel((byte) 0xda);
 
                 for (int z = 0; z < 2; z++) {

@@ -13,7 +13,9 @@ import ru.codeunited.rpi.hello.Bits;
  * byte x: message type specific
  * @author ikonovalov
  */
-public abstract class HWMessage {   
+public abstract class HWMessage {
+    
+    public static final byte HEADER_LEN =           2;
     
     public static final byte MSG_UART =             0b0011_00_00;
     

@@ -54,8 +54,9 @@ public class ClientRequestHandler {
 
     void handle() {
         final int bufferSz = 8;
+        final int lastBufferIndex = bufferSz - 1;
         byte[] buffer = new byte[bufferSz];
-        byte[] restTransmission;
+        byte[] incompleteMessage = null;
         System.out.println("Handling incoming connection... ");
         System.out.println("MF ready : " + (getMessageFactory() != null));
         System.out.println("MB ready : " + (getMessageBus() != null));
@@ -67,41 +68,64 @@ public class ClientRequestHandler {
             int readSize;
             while ((readSize = in.read(buffer)) != -1) { // keep reading stream while connected     
                 System.out.println("Buffer read " + readSize);
-
+                byte[] workMemory = null;
+                int workMemorySz = 0;
+                if (incompleteMessage != null) {
+                    System.out.println("Incomplete message detected");
+                    workMemorySz = incompleteMessage.length + bufferSz;
+                    workMemory = new byte[workMemorySz];
+                    System.arraycopy(incompleteMessage, 0, workMemory, 0, incompleteMessage.length);
+                    System.arraycopy(buffer, 0, workMemory, incompleteMessage.length, readSize);
+                    incompleteMessage = null; // cleanup incomplete
+                } else {
+                    workMemory = new byte[bufferSz];
+                    workMemorySz = bufferSz;
+                    System.arraycopy(buffer, 0, workMemory, 0, readSize);
+                }
+                System.out.println("WorkMem: " + workMemorySz);
+                
                 int msgOffset = 0;
                 boolean parseMessage = true;
+                
                 while (parseMessage) {
-                    byte msgSize = buffer[msgOffset + 1];
-                    byte[] msg = new byte[msgSize];
-                    System.arraycopy(buffer, msgOffset, msg, 0, msgSize);
+                    byte msgSize = workMemory[msgOffset + 1];
                     
+                    if (msgSize + msgOffset <= workMemorySz) { // msg fully contains in a buffer
+                        byte[] msg = new byte[msgSize];
+                        System.arraycopy(workMemory, msgOffset, msg, 0, msgSize);
 
-                    System.out.println("MsgSize: " + msgSize);
-                    
-                    HWMessage hwMessage = getMessageFactory().createFrom(msg);
-                    writer.write("cls " + hwMessage.getClass().getName() + '\n');
-                    getMessageBus().publish(hwMessage);
-                    
-                    msgOffset += msgSize; // move to start of a next message
-                    System.out.println("New MsgOffset: " + msgOffset);
-                    
-                    // detect stop factors
-                    if (msgOffset  >= bufferSz ) { // а вот тут возможно сообщение выходит за границы буфера!
+                        System.out.println("MsgSize: " + msgSize);
+
+                        HWMessage hwMessage = getMessageFactory().createFrom(msg);
+                        writer.write("cls " + hwMessage.getClass().getName() + '\n');
+                        getMessageBus().publish(hwMessage);
+                        
+                        msgOffset += msgSize;
+                        System.out.println("New MsgOffset: " + msgOffset);
+                    } else { // only part of message contains in a buffer
+                        // oversized message
+                        System.out.println("Oversized message!");
+                        int incompletePartBuffer = workMemorySz - msgOffset;
+                        incompleteMessage = new byte[incompletePartBuffer];
+                        System.out.println("Oversized message rest: " + incompletePartBuffer);
+                        System.arraycopy(workMemory, msgOffset, incompleteMessage, 0, incompletePartBuffer);
                         parseMessage = false;
-                        System.out.println("Offset points out of buffer");
-                        continue;
                     }
-                    if (buffer[msgOffset] == 0x00) { //0x00 - we don't have 0x00 message type - so buffer not fulled.
+                                      
+                    // detect stop factors
+                    if (msgOffset >= workMemorySz || workMemory[msgOffset] == 0x00) { //0x00 - we don't have 0x00 message type - so buffer not fulled.
                         parseMessage = false;
                         System.out.println("No more messages in a buffer");
-                        continue;
                     }
                 }
             }
             writer.write("End of transmission\n");
             writer.flush();
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            ex.printStackTrace();;
             Logger.getLogger(ClientRequestHandler.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println(ex.getMessage());
+            System.err.println("Terminate connection!");
         } finally {
             try {
                 connection.close();
