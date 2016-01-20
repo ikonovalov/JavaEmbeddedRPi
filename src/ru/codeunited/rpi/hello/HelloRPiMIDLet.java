@@ -5,13 +5,12 @@
  */
 package ru.codeunited.rpi.hello;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import ru.codeunited.i2c.device.PCF8591;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.midlet.MIDlet;
@@ -28,10 +27,14 @@ import ru.codeunited.rpi.com.RPiCommunication;
 public class HelloRPiMIDLet extends MIDlet {
 
     private final RPiServer server = new RPiServer();
+    
+    private final MessageBus bus = new MessageBusImpl();
 
     @Override
-    public void startApp() {        
-        server.setMessageBus(new MessageBusImpl());
+    public void startApp() {    
+        bus.subscribe(new GPIOMessageSubscriber());
+        
+        server.setMessageBus(bus);
         server.setMessageFactory(new HWMessageDefaultFactoryImpl());
         server.up();
 
@@ -60,18 +63,14 @@ public class HelloRPiMIDLet extends MIDlet {
         }
 
         System.out.println("UART communication with Arduino MEGA 2560 R3");
-        try (final RPiCommunication arduinoUART = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART)) {
+        try (final RPiCommunication arduinoUART = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART, new Properties())) {
             System.out.println("Arduino channel ready...");
             arduinoUART.open();
-            InputStream is = arduinoUART.newInputStream();
-            InputStreamReader isReader = new InputStreamReader(is);
-            BufferedReader bReader = new BufferedReader(isReader);
-
-            for (int z = 0; z < 5; z++) {
-                System.out.println(bReader.readLine());
+            InputStream is = arduinoUART.newInputStream();      
+            // drain uart
+            while(is.available() > 0) {
+                is.read();
             }
-            bReader.close();
-            isReader.close();
             is.close();
             System.out.println("Finalize transmission.");
         } catch (IOException ex) {

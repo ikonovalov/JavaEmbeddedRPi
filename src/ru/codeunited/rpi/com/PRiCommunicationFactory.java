@@ -5,13 +5,15 @@
  */
 package ru.codeunited.rpi.com;
 
+import java.util.Properties;
+
 /**
  *
  * @author ikonovalov
  */
 public final class PRiCommunicationFactory {
 
-    public static <T extends RPiCommunication> T create(RPiCommunicationCapabilities capabilities) {
+    public static <T extends RPiCommunication> T create(RPiCommunicationCapabilities capabilities, Properties properties) {
         switch (capabilities) {
             case UART:
                 return (T) new UARTCommunication(115200);

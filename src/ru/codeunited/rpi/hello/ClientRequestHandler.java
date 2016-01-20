@@ -68,8 +68,9 @@ public class ClientRequestHandler {
             int readSize;
             while ((readSize = in.read(buffer)) != -1) { // keep reading stream while connected     
                 System.out.println("Buffer read " + readSize);
-                byte[] workMemory = null;
-                int workMemorySz = 0;
+                byte[] workMemory;
+                int workMemorySz;
+                // copy buffer into work memory of incomplete + buffer
                 if (incompleteMessage != null) {
                     System.out.println("Incomplete message detected");
                     workMemorySz = incompleteMessage.length + bufferSz;
@@ -122,7 +123,6 @@ public class ClientRequestHandler {
             writer.write("End of transmission\n");
             writer.flush();
         } catch (Exception ex) {
-            ex.printStackTrace();;
             Logger.getLogger(ClientRequestHandler.class.getName()).log(Level.SEVERE, null, ex);
             System.err.println(ex.getMessage());
             System.err.println("Terminate connection!");

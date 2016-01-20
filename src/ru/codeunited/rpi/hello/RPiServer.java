@@ -6,6 +6,7 @@
 package ru.codeunited.rpi.hello;
 
 import java.io.IOException;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.io.Connector;
@@ -32,11 +33,11 @@ public class RPiServer implements Runnable {
 
     private ServerSocketConnection serverSocket;
     
-    private MessageBus messageBus = new MessageBusImpl();       
+    private MessageBus messageBus;       
         
     private HWMessageFactory messageFactory;
     
-    private final UARTCommunication uart = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART);
+    private final UARTCommunication uart = PRiCommunicationFactory.create(RPiCommunicationCapabilities.UART, new Properties());
 
     public RPiServer() {
         this(DEFAULT_PORT);

@@ -36,11 +36,15 @@ public abstract class HWMessage {
     }
     
     public byte getType() {
-        return Bits.highNibble(message[0]);
+        return (byte) (message[0] & 0xF0);
     }
     
     public int getVersion() {
         return Bits.lowNibble(message[0]) >> 2;
+    }
+    
+    public int size() {
+        return message[1];
     }
     
 }
