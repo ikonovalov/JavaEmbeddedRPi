@@ -35,6 +35,10 @@ public abstract class HWMessage {
         this.message = message;
     }
     
+    protected byte[] getRawMessage() {
+        return message;
+    }
+    
     public byte getType() {
         return (byte) (message[0] & 0xF0);
     }
